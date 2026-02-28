@@ -50,6 +50,10 @@ class RunnerRegistry:
             )
             self._runners[conversation_id] = runner
 
+            # Replay historical events for newly created runners (resume / switch).
+            # This is a no-op for brand-new conversations with no events.
+            runner.replay_historical_events()
+
         if runner.conversation is not None:
             self._state.attach_conversation_state(runner.conversation.state)
 

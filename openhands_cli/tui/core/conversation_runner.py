@@ -80,6 +80,7 @@ class ConversationRunner:
         )
 
         self._running = False
+        self._historical_events_replayed = False
 
         # State for reading (is_confirmation_active) and updating (set_running)
         self._state = state
@@ -265,6 +266,27 @@ class ConversationRunner:
     def pause_runner_without_blocking(self):
         if self.is_running:
             asyncio.create_task(self.pause())
+
+    def replay_historical_events(self) -> int:
+        """Replay historical events from the conversation into the visualizer.
+
+        Iterates conversation.state.events and renders them via the visualizer's
+        replay_events() method, which skips side effects (critic, telemetry).
+
+        Returns:
+            Count of replayed events, or 0 if already replayed or empty.
+        """
+        if self._historical_events_replayed:
+            return 0
+
+        self._historical_events_replayed = True
+
+        events = list(self.conversation.state.events)
+        if not events:
+            return 0
+
+        self.visualizer.replay_events(events)
+        return len(events)
 
     def get_conversation_summary(self) -> tuple[int, Text]:
         """Get a summary of the conversation for headless mode output.

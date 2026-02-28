@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from rich.text import Text
 from textual.widgets import Markdown
 
+from openhands.sdk import TextContent
 from openhands.sdk.conversation.visualizer.base import ConversationVisualizerBase
 from openhands.sdk.event import (
     ActionEvent,
@@ -855,3 +856,50 @@ class ConversationVisualizer(ConversationVisualizerBase):
             return self._make_collapsible(
                 content_string, f"{agent_prefix}{title}", event
             )
+
+    def replay_events(self, events: list[Event]) -> None:
+        """Replay historical events into the UI without triggering side effects.
+
+        Unlike on_event(), this skips critic handling, telemetry, and plan panel
+        refreshes. User messages (normally rendered separately by
+        UserMessageController) are rendered inline so the full conversation
+        history appears.
+
+        Must be called from the main thread.
+        """
+        from textual.widgets import Static
+
+        for event in events:
+            # Render user messages that on_event normally skips
+            if (
+                isinstance(event, MessageEvent)
+                and event.llm_message
+                and event.llm_message.role == "user"
+                and not event.sender
+            ):
+                text_parts = []
+                for item in event.llm_message.content:
+                    if isinstance(item, TextContent):
+                        text_parts.append(item.text)
+                content_text = "\n".join(text_parts)
+                if content_text.strip():
+                    widget = Static(
+                        f"> {content_text}", classes="user-message", markup=False
+                    )
+                    self._add_widget_to_ui(widget)
+                continue
+
+            # Handle observation pairing (same as on_event)
+            if isinstance(
+                event, ObservationEvent | UserRejectObservation | AgentErrorEvent
+            ):
+                if self._handle_observation_event(event):
+                    continue
+
+            widget = self._create_event_widget(event)
+            if widget:
+                self._add_widget_to_ui(widget)
+
+        # Scroll to the end after replaying all events
+        if events:
+            self._container.scroll_end(animate=False)
