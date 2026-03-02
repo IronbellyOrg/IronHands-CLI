@@ -11,6 +11,14 @@ import sys
 import warnings
 from pathlib import Path
 
+# BUG-005: Suppress RequestsDependencyWarning before third-party imports.
+# The `requests` library (via urllib3) emits this warning at import time when
+# charset_normalizer is used instead of chardet. Filter must be active before
+# any transitive import of `requests` (e.g., via openhands_cli.stores).
+warnings.filterwarnings(
+    "ignore", message=r"urllib3.*or chardet.*charset_normalizer"
+)
+
 from dotenv import load_dotenv
 from rich.console import Console
 
@@ -47,6 +55,12 @@ def handle_resume_logic(args: argparse.Namespace) -> str | None:
     Returns:
         Conversation ID to resume, or None if it should show conversation list or exit
     """
+    # BUG-003: Normalize `--resume last` (case-insensitive) to the --last code path.
+    # Users intuitively type `--resume last` instead of `--resume --last`.
+    if args.resume and args.resume.lower() == "last":
+        args.last = True
+        args.resume = ""
+
     # Check if --last flag is used
     if args.last:
         if args.resume is None:

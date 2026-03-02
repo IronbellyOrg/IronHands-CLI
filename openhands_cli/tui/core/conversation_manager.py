@@ -9,6 +9,7 @@ business logic (runner lifecycle, CRUD/store interactions, switching flows,
 confirmation policy + resume flows, etc.).
 """
 
+import logging
 import uuid
 from typing import TYPE_CHECKING
 
@@ -292,6 +293,18 @@ class ConversationManager(Container):
     async def send_message(self, content: str) -> None:
         """Send a message to the current conversation."""
         self.post_message(SendMessage(content))
+
+    def ensure_runner(self, conversation_id: uuid.UUID) -> None:
+        """Eagerly create a runner for a conversation, triggering event replay.
+
+        BUG-001: During --resume startup, lazy runner creation means
+        replay_historical_events() never fires until the first user message.
+        This method forces early runner creation so historical events are
+        replayed immediately.
+        """
+        logger = logging.getLogger(__name__)
+        logger.debug("ensure_runner: eagerly creating runner for %s", conversation_id)
+        self._runners.get_or_create(conversation_id)
 
     def create_conversation(self) -> None:
         """Create a new conversation."""
