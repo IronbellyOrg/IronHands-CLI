@@ -63,3 +63,23 @@ class TestRunnerRegistryReplay:
 
         runner_a.replay_historical_events.assert_called_once()
         runner_b.replay_historical_events.assert_called_once()
+
+    def test_replay_failure_leaves_cache_empty(self, registry, mock_factory):
+        """If replay_historical_events raises, the runner must NOT be cached."""
+        cid = uuid.uuid4()
+        runner = mock_factory.create.return_value
+        runner.replay_historical_events.side_effect = RuntimeError("replay failed")
+
+        with pytest.raises(RuntimeError, match="replay failed"):
+            registry.get_or_create(cid)
+
+        assert cid not in registry._runners
+
+    def test_replay_failure_propagates_exception(self, registry, mock_factory):
+        """The exception from replay_historical_events must propagate to the caller."""
+        cid = uuid.uuid4()
+        runner = mock_factory.create.return_value
+        runner.replay_historical_events.side_effect = ValueError("bad event")
+
+        with pytest.raises(ValueError, match="bad event"):
+            registry.get_or_create(cid)
