@@ -110,6 +110,19 @@ class ConversationManager(Container):
     - UserMessageController: rendering + message send/queue behavior
     - ConfirmationPolicyService + ConfirmationFlowController: policy + resume flows
     - RefinementController: iterative refinement based on critic results
+
+    Communication pattern
+    ---------------------
+    Most coordination flows through Textual's message-based dispatch
+    (``on_*`` handlers).  Two methods bypass this pattern for synchronous
+    timing reasons:
+
+    - ``ensure_runner()`` — eagerly creates a runner so that
+      ``replay_historical_events()`` fires before the first user message
+      (required during ``--resume`` startup ordering).
+    - ``reload_visualizer_configuration()`` — called directly by the app
+      after settings changes to reload the visualizer configuration
+      immediately rather than going through the message queue.
     """
 
     def __init__(

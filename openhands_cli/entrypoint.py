@@ -15,21 +15,19 @@ from pathlib import Path
 # The `requests` library (via urllib3) emits this warning at import time when
 # charset_normalizer is used instead of chardet. Filter must be active before
 # any transitive import of `requests` (e.g., via openhands_cli.stores).
-warnings.filterwarnings(
-    "ignore", message=r"urllib3.*or chardet.*charset_normalizer"
-)
+warnings.filterwarnings("ignore", message=r"urllib3.*or chardet.*charset_normalizer")
 
-from dotenv import load_dotenv
-from rich.console import Console
+from dotenv import load_dotenv  # noqa: E402
+from rich.console import Console  # noqa: E402
 
-from openhands_cli.argparsers.main_parser import create_main_parser
-from openhands_cli.stores import (
+from openhands_cli.argparsers.main_parser import create_main_parser  # noqa: E402
+from openhands_cli.stores import (  # noqa: E402
     MissingEnvironmentVariablesError,
     check_and_warn_env_vars,
 )
-from openhands_cli.terminal_compat import check_terminal_compatibility
-from openhands_cli.theme import OPENHANDS_THEME
-from openhands_cli.utils import create_seeded_instructions_from_args
+from openhands_cli.terminal_compat import check_terminal_compatibility  # noqa: E402
+from openhands_cli.theme import OPENHANDS_THEME  # noqa: E402
+from openhands_cli.utils import create_seeded_instructions_from_args  # noqa: E402
 
 
 console = Console()
